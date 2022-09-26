@@ -1,0 +1,11 @@
+{
+  "name": "sitmpcz/ad-ldap",
+  "type": "library",
+  "require": {
+    "php": ">=8.0"
+  },
+  "minimum-stability": "dev",
+  "autoload": {
+    "classmap": ["src/"]
+  }
+}
