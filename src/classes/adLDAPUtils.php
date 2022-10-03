@@ -68,15 +68,18 @@ class adLDAPUtils
     {
 
         $groupArray = array();
-        for ($i = 0; $i < $groups["count"]; $i++) { // For each group
-            $line = $groups[$i];
+        //PHP Warning: Trying to access array offset on value of type null
+        if (isset($groups["count"])) {
+            for ($i = 0; $i < $groups["count"]; $i++) { // For each group
+                $line = $groups[$i];
 
-            if (strlen($line) > 0) {
-                // More presumptions, they're all prefixed with CN=
-                // so we ditch the first three characters and the group
-                // name goes up to the first comma
-                $bits = explode(",", $line);
-                $groupArray[] = substr($bits[0], 3, (strlen($bits[0]) - 3));
+                if (strlen($line) > 0) {
+                    // More presumptions, they're all prefixed with CN=
+                    // so we ditch the first three characters and the group
+                    // name goes up to the first comma
+                    $bits = explode(",", $line);
+                    $groupArray[] = substr($bits[0], 3, (strlen($bits[0]) - 3));
+                }
             }
         }
         return $groupArray;

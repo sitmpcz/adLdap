@@ -60,8 +60,9 @@ class adLDAPUsers
      *
      * @param string $username A user's AD username
      * @param string $password A user's AD password
-     * @param bool optional $prevent_rebind
+     * @param bool $preventRebind
      * @return bool
+     * @throws adLDAPException
      */
     public function authenticate($username, $password, $preventRebind = false)
     {
@@ -75,6 +76,7 @@ class adLDAPUsers
      *
      * @param array $attributes The attributes to set to the user account
      * @return bool
+     * @throws adLDAPException
      */
     public function create($attributes)
     {
@@ -220,7 +222,7 @@ class adLDAPUsers
      *
      * @param string $username The username to delete (please be careful here!)
      * @param bool $isGUID Is the username a GUID or a samAccountName
-     * @return array|false
+     * @return bool
      */
     public function delete($username, $isGUID = false)
     {
@@ -255,7 +257,12 @@ class adLDAPUsers
 
         // Search the directory for their information
         $info = @$this->info($username, array("memberof", "primarygroupid"), $isGUID);
-        $groups = $this->adldap->utilities()->niceNames($info[0]["memberof"]); // Presuming the entry returned is our guy (unique usernames)
+        // PHP Warning: Trying to access array offset on value of type bool in
+        if (($info) && isset($info[0]) && isset($info[0]["memberof"])) {
+            $groups = $this->adldap->utilities()->niceNames($info[0]["memberof"]); // Presuming the entry returned is our guy (unique usernames)
+        } else {
+            $groups = array();
+        }
 
         if ($recursive === true) {
             foreach ($groups as $id => $groupName) {
@@ -390,8 +397,9 @@ class adLDAPUsers
      *
      * @param string $username The username to query
      * @param bool $isGUID Is the username passed a GUID or a samAccountName
-     * @requires bcmath http://www.php.net/manual/en/book.bc.php
      * @return array|string
+     * @throws adLDAPException
+     * @requires bcmath http://www.php.net/manual/en/book.bc.php
      */
     public function passwordExpiry($username, $isGUID = false)
     {
@@ -470,6 +478,7 @@ class adLDAPUsers
      * @param array $attributes The attributes to modify.  Note if you set the enabled attribute you must not specify any other attributes
      * @param bool $isGUID Is the username passed a GUID or a samAccountName
      * @return bool
+     * @throws adLDAPException
      */
     public function modify($username, $attributes, $isGUID = false)
     {
@@ -522,6 +531,7 @@ class adLDAPUsers
      * @param string $username The username to disable
      * @param bool $isGUID Is the username passed a GUID or a samAccountName
      * @return bool
+     * @throws adLDAPException
      */
     public function disable($username, $isGUID = false)
     {
@@ -543,6 +553,7 @@ class adLDAPUsers
      * @param string $username The username to enable
      * @param bool $isGUID Is the username passed a GUID or a samAccountName
      * @return bool
+     * @throws adLDAPException
      */
     public function enable($username, $isGUID = false)
     {
@@ -565,6 +576,7 @@ class adLDAPUsers
      * @param string $password The new password
      * @param bool $isGUID Is the username passed a GUID or a samAccountName
      * @return bool
+     * @throws adLDAPException
      */
     public function password($username, $password, $isGUID = false)
     {
@@ -758,7 +770,7 @@ class adLDAPUsers
      * @param string $username The username to move (please be careful here!)
      * @param array $container The container or containers to move the user to (please be careful here!).
      * accepts containers in 1. parent 2. child order
-     * @return array|false
+     * @return bool
      */
     public function move($username, $container)
     {

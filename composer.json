@@ -2,7 +2,9 @@
   "name": "sitmpcz/ad-ldap",
   "type": "library",
   "require": {
-    "php": ">=8.0"
+    "php": ">=8.0",
+    "ext-ldap": "*",
+    "ext-bcmath": "*"
   },
   "minimum-stability": "dev",
   "autoload": {
