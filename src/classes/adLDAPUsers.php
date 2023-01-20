@@ -1,6 +1,8 @@
 <?php
 namespace adLDAP;
-/** 
+use http\Params;
+
+/**
  * PHP LDAP CLASS FOR MANIPULATING ACTIVE DIRECTORY
  * Version 4.0.4
  *
@@ -306,27 +308,27 @@ class adLDAPUsers
         if (!in_array("objectsid", $fields)) {
             $fields[] = "objectsid";
         }
-        $sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields);
-        $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
+        if ($sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields)) {
+            $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
 
-        if (isset($entries[0])) {
-            if ($entries[0]['count'] >= 1) {
-                if (in_array("memberof", $fields)) {
-                    // AD does not return the primary group in the ldap query, we may need to fudge it
-                    if ($this->adldap->getRealPrimaryGroup() && isset($entries[0]["primarygroupid"][0]) && isset($entries[0]["objectsid"][0])) {
-                        //$entries[0]["memberof"][]=$this->group_cn($entries[0]["primarygroupid"][0]);
-                        $entries[0]["memberof"][] = $this->adldap->group()->getPrimaryGroup($entries[0]["primarygroupid"][0], $entries[0]["objectsid"][0]);
-                    } else {
-                        $entries[0]["memberof"][] = "CN=Domain Users,CN=Users," . $this->adldap->getBaseDn();
+            if (isset($entries[0])) {
+                if ($entries[0]['count'] >= 1) {
+                    if (in_array("memberof", $fields)) {
+                        // AD does not return the primary group in the ldap query, we may need to fudge it
+                        if ($this->adldap->getRealPrimaryGroup() && isset($entries[0]["primarygroupid"][0]) && isset($entries[0]["objectsid"][0])) {
+                            //$entries[0]["memberof"][]=$this->group_cn($entries[0]["primarygroupid"][0]);
+                            $entries[0]["memberof"][] = $this->adldap->group()->getPrimaryGroup($entries[0]["primarygroupid"][0], $entries[0]["objectsid"][0]);
+                        } else {
+                            $entries[0]["memberof"][] = "CN=Domain Users,CN=Users," . $this->adldap->getBaseDn();
+                        }
+                        if (!isset($entries[0]["memberof"]["count"])) {
+                            $entries[0]["memberof"]["count"] = 0;
+                        }
+                        $entries[0]["memberof"]["count"]++;
                     }
-                    if (!isset($entries[0]["memberof"]["count"])) {
-                        $entries[0]["memberof"]["count"] = 0;
-                    }
-                    $entries[0]["memberof"]["count"]++;
                 }
+                return $entries;
             }
-
-            return $entries;
         }
         return false;
     }
@@ -677,7 +679,8 @@ class adLDAPUsers
         // Perform the search and grab all their details
         $filter = "(&(objectClass=user)(samaccounttype=" . adLDAP::ADLDAP_NORMAL_ACCOUNT . ")(objectCategory=person)(cn=" . $search . "))";
         $fields = array("samaccountname", "displayname");
-        $sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields);
+        if ($sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields))
+        {
         $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
 
         $usersArray = array();
@@ -694,6 +697,9 @@ class adLDAPUsers
             asort($usersArray);
         }
         return $usersArray;
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -713,12 +719,13 @@ class adLDAPUsers
 
         $filter = "samaccountname=" . $username;
         $fields = array("objectGUID");
-        $sr = @ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields);
-        if (ldap_count_entries($this->adldap->getLdapConnection(), $sr) > 0) {
-            $entry = @ldap_first_entry($this->adldap->getLdapConnection(), $sr);
-            $guid = @ldap_get_values_len($this->adldap->getLdapConnection(), $entry, 'objectGUID');
-            $strGUID = $this->adldap->utilities()->binaryToText($guid[0]);
-            return $strGUID;
+        if ($sr = @ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields)) {
+            if (ldap_count_entries($this->adldap->getLdapConnection(), $sr) > 0) {
+                $entry = @ldap_first_entry($this->adldap->getLdapConnection(), $sr);
+                $guid = @ldap_get_values_len($this->adldap->getLdapConnection(), $entry, 'objectGUID');
+                $strGUID = $this->adldap->utilities()->binaryToText($guid[0]);
+                return $strGUID;
+            }
         }
         return false;
     }
@@ -745,7 +752,8 @@ class adLDAPUsers
         }
         $filter = "(&(objectClass=user)(samaccounttype=" . adLDAP::ADLDAP_NORMAL_ACCOUNT . ")(objectCategory=person)" . $searchParams . ")";
         $fields = array("samaccountname", "displayname");
-        $sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields);
+        if ($sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields))
+        {
         $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
 
         $usersArray = array();
@@ -762,6 +770,9 @@ class adLDAPUsers
             asort($usersArray);
         }
         return ($usersArray);
+        } else {
+            return false;
+        }
     }
 
     /**

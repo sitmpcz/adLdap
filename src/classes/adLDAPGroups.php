@@ -203,7 +203,7 @@ class adLDAPGroups
      *
      * @param string $group The group to delete (please be careful here!)
      *
-     * @return array|false
+     * @return array|bool
      */
     public function delete($group)
     {
@@ -346,27 +346,30 @@ class adLDAPGroups
         for ($i = 0; $i < $groups["count"]; $i++) {
             $filter = "(&(objectCategory=group)(distinguishedName=" . $this->adldap->utilities()->ldapSlashes($groups[$i]) . "))";
             $fields = array("samaccountname", "distinguishedname", "objectClass");
-            $sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields);
-            $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
-
-            // not a person, look for a group
-            if ($entries['count'] == 0 && $recursive == true) {
-                $filter = "(&(objectCategory=group)(distinguishedName=" . $this->adldap->utilities()->ldapSlashes($groups[$i]) . "))";
-                $fields = array("distinguishedname");
-                $sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields);
+            if ($sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields))
+            {
                 $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
-                if (!isset($entries[0]['distinguishedname'][0])) {
+
+                // not a person, look for a group
+                if ($entries['count'] == 0 && $recursive == true) {
+                    $filter = "(&(objectCategory=group)(distinguishedName=" . $this->adldap->utilities()->ldapSlashes($groups[$i]) . "))";
+                    $fields = array("distinguishedname");
+                    if ($sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields)) {
+                        $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
+                        if (!isset($entries[0]['distinguishedname'][0])) {
+                            continue;
+                        }
+                        $subGroups = $this->inGroup($entries[0]['distinguishedname'][0], $recursive);
+                        if (is_array($subGroups)) {
+                            $groupArray = array_merge($groupArray, $subGroups);
+                            $groupArray = array_unique($groupArray);
+                        }
+                    }
                     continue;
                 }
-                $subGroups = $this->inGroup($entries[0]['distinguishedname'][0], $recursive);
-                if (is_array($subGroups)) {
-                    $groupArray = array_merge($groupArray, $subGroups);
-                    $groupArray = array_unique($groupArray);
-                }
-                continue;
-            }
 
-            $groupArray[] = $entries[0]['distinguishedname'][0];
+                $groupArray[] = $entries[0]['distinguishedname'][0];
+            }
         }
         return $groupArray;
     }
@@ -398,32 +401,36 @@ class adLDAPGroups
         for ($i = 0; $i < $users["count"]; $i++) {
             $filter = "(&(objectCategory=person)(distinguishedName=" . $this->adldap->utilities()->ldapSlashes($users[$i]) . "))";
             $fields = array("samaccountname", "distinguishedname", "objectClass");
-            $sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields);
-            $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
-
-            // not a person, look for a group
-            if ($entries['count'] == 0 && $recursive == true) {
-                $filter = "(&(objectCategory=group)(distinguishedName=" . $this->adldap->utilities()->ldapSlashes($users[$i]) . "))";
-                $fields = array("samaccountname");
-                $sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields);
+            if ($sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields)) {
                 $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
-                if (!isset($entries[0]['samaccountname'][0])) {
+
+                // not a person, look for a group
+                if ($entries['count'] == 0 && $recursive == true) {
+                    $filter = "(&(objectCategory=group)(distinguishedName=" . $this->adldap->utilities()->ldapSlashes($users[$i]) . "))";
+                    $fields = array("samaccountname");
+                    if ($sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields)) {
+                        $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
+                        if (!isset($entries[0]['samaccountname'][0])) {
+                            continue;
+                        }
+                        $subUsers = $this->members($entries[0]['samaccountname'][0], $recursive);
+                        if (is_array($subUsers)) {
+                            $userArray = array_merge($userArray, $subUsers);
+                            $userArray = array_unique($userArray);
+                        }
+                    }
+                    continue;
+                } else if ($entries['count'] == 0) {
                     continue;
                 }
-                $subUsers = $this->members($entries[0]['samaccountname'][0], $recursive);
-                if (is_array($subUsers)) {
-                    $userArray = array_merge($userArray, $subUsers);
-                    $userArray = array_unique($userArray);
-                }
-                continue;
-            } else if ($entries['count'] == 0) {
-                continue;
-            }
 
-            if ((!isset($entries[0]['samaccountname'][0]) || $entries[0]['samaccountname'][0] === NULL) && $entries[0]['distinguishedname'][0] !== NULL) {
-                $userArray[] = $entries[0]['distinguishedname'][0];
-            } else if ($entries[0]['samaccountname'][0] !== NULL) {
-                $userArray[] = $entries[0]['samaccountname'][0];
+                if ((!isset($entries[0]['samaccountname'][0]) || $entries[0]['samaccountname'][0] === NULL) && $entries[0]['distinguishedname'][0] !== NULL) {
+                    $userArray[] = $entries[0]['distinguishedname'][0];
+                } else if ($entries[0]['samaccountname'][0] !== NULL) {
+                    $userArray[] = $entries[0]['samaccountname'][0];
+                }
+            } else {
+                continue;
             }
         }
         return $userArray;
@@ -454,10 +461,13 @@ class adLDAPGroups
         if ($fields === NULL) {
             $fields = array("member", "memberof", "cn", "description", "distinguishedname", "objectcategory", "samaccountname");
         }
-        $sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields);
-        $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
+        if ($sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields)) {
+            $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
 
-        return $entries;
+            return $entries;
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -547,23 +557,26 @@ class adLDAPGroups
         $filter .= '(cn=' . $search . '))';
         // Perform the search and grab all their details
         $fields = array("samaccountname", "description");
-        $sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields);
-        $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
+        if ($sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields)) {
+            $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
 
-        $groupsArray = array();
-        for ($i = 0; $i < $entries["count"]; $i++) {
-            if ($includeDescription && strlen($entries[$i]["description"][0]) > 0) {
-                $groupsArray[$entries[$i]["samaccountname"][0]] = $entries[$i]["description"][0];
-            } else if ($includeDescription) {
-                $groupsArray[$entries[$i]["samaccountname"][0]] = $entries[$i]["samaccountname"][0];
-            } else {
-                array_push($groupsArray, $entries[$i]["samaccountname"][0]);
+            $groupsArray = array();
+            for ($i = 0; $i < $entries["count"]; $i++) {
+                if ($includeDescription && strlen($entries[$i]["description"][0]) > 0) {
+                    $groupsArray[$entries[$i]["samaccountname"][0]] = $entries[$i]["description"][0];
+                } else if ($includeDescription) {
+                    $groupsArray[$entries[$i]["samaccountname"][0]] = $entries[$i]["samaccountname"][0];
+                } else {
+                    array_push($groupsArray, $entries[$i]["samaccountname"][0]);
+                }
             }
+            if ($sorted) {
+                asort($groupsArray);
+            }
+            return $groupsArray;
+        } else {
+            return false;
         }
-        if ($sorted) {
-            asort($groupsArray);
-        }
-        return $groupsArray;
     }
 
     /**
@@ -624,16 +637,17 @@ class adLDAPGroups
         if ($gid === NULL || $usersid === NULL) {
             return false;
         }
-        $sr = false;
+        //$sr = false;
 
         $gsid = substr_replace($usersid, pack('V', $gid), strlen($usersid) - 4, 4);
         $filter = '(objectsid=' . $this->adldap->utilities()->getTextSID($gsid) . ')';
         $fields = array("samaccountname", "distinguishedname");
-        $sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields);
-        $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
+        if ($sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields)) {
+            $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
 
-        if (isset($entries[0]['distinguishedname'][0])) {
-            return $entries[0]['distinguishedname'][0];
+            if (isset($entries[0]['distinguishedname'][0])) {
+                return $entries[0]['distinguishedname'][0];
+            }
         }
         return false;
     }
@@ -655,21 +669,24 @@ class adLDAPGroups
         if ($gid === NULL) {
             return false;
         }
-        $sr = false;
+        //$sr = false;
         $r = '';
 
         $filter = "(&(objectCategory=group)(samaccounttype=" . adLDAP::ADLDAP_SECURITY_GLOBAL_GROUP . "))";
         $fields = array("primarygrouptoken", "samaccountname", "distinguishedname");
-        $sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields);
-        $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
+        if ($sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields)) {
+            $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
 
-        for ($i = 0; $i < $entries["count"]; $i++) {
-            if ($entries[$i]["primarygrouptoken"][0] == $gid) {
-                $r = $entries[$i]["distinguishedname"][0];
-                $i = $entries["count"];
+            for ($i = 0; $i < $entries["count"]; $i++) {
+                if ($entries[$i]["primarygrouptoken"][0] == $gid) {
+                    $r = $entries[$i]["distinguishedname"][0];
+                    $i = $entries["count"];
+                }
             }
-        }
 
-        return $r;
+            return $r;
+        } else {
+            return false;
+        }
     }
 }

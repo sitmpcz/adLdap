@@ -132,16 +132,18 @@ class adLDAPFolders
         }
 
         if ($recursive === true) {
-            $sr = ldap_search($this->adldap->getLdapConnection(), $searchOu, $filter, array('objectclass', 'distinguishedname', 'samaccountname'));
-            $entries = @ldap_get_entries($this->adldap->getLdapConnection(), $sr);
-            if (is_array($entries)) {
-                return $entries;
+            if ($sr = ldap_search($this->adldap->getLdapConnection(), $searchOu, $filter, array('objectclass', 'distinguishedname', 'samaccountname'))) {
+                $entries = @ldap_get_entries($this->adldap->getLdapConnection(), $sr);
+                if (is_array($entries)) {
+                    return $entries;
+                }
             }
         } else {
-            $sr = ldap_list($this->adldap->getLdapConnection(), $searchOu, $filter, array('objectclass', 'distinguishedname', 'samaccountname'));
-            $entries = @ldap_get_entries($this->adldap->getLdapConnection(), $sr);
-            if (is_array($entries)) {
-                return $entries;
+            if ($sr = ldap_list($this->adldap->getLdapConnection(), $searchOu, $filter, array('objectclass', 'distinguishedname', 'samaccountname'))) {
+                $entries = @ldap_get_entries($this->adldap->getLdapConnection(), $sr);
+                if (is_array($entries)) {
+                    return $entries;
+                }
             }
         }
 

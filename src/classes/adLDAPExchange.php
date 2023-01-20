@@ -385,9 +385,12 @@ class adLDAPExchange
         }
 
         $configurationNamingContext = $this->adldap->getRootDse(array('configurationnamingcontext'));
-        $sr = @ldap_search($this->adldap->getLdapConnection(), $configurationNamingContext[0]['configurationnamingcontext'][0], '(&(objectCategory=msExchExchangeServer))', $attributes);
-        $entries = @ldap_get_entries($this->adldap->getLdapConnection(), $sr);
-        return $entries;
+        if ($sr = @ldap_search($this->adldap->getLdapConnection(), $configurationNamingContext[0]['configurationnamingcontext'][0], '(&(objectCategory=msExchExchangeServer))', $attributes)) {
+            $entries = @ldap_get_entries($this->adldap->getLdapConnection(), $sr);
+            return $entries;
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -411,16 +414,20 @@ class adLDAPExchange
         }
 
         $filter = '(&(objectCategory=msExchStorageGroup))';
-        $sr = @ldap_search($this->adldap->getLdapConnection(), $exchangeServer, $filter, $attributes);
-        $entries = @ldap_get_entries($this->adldap->getLdapConnection(), $sr);
+        if ($sr = @ldap_search($this->adldap->getLdapConnection(), $exchangeServer, $filter, $attributes)) {
+            $entries = @ldap_get_entries($this->adldap->getLdapConnection(), $sr);
 
-        if ($recursive === true) {
-            for ($i = 0; $i < $entries['count']; $i++) {
-                $entries[$i]['msexchprivatemdb'] = $this->storageDatabases($entries[$i]['distinguishedname'][0]);
+            if ($recursive === true) {
+                for ($i = 0; $i < $entries['count']; $i++) {
+                    $entries[$i]['msexchprivatemdb'] = $this->storageDatabases($entries[$i]['distinguishedname'][0]);
+                }
             }
+
+            return $entries;
+        } else {
+            return false;
         }
 
-        return $entries;
     }
 
     /**
@@ -440,8 +447,11 @@ class adLDAPExchange
         }
 
         $filter = '(&(objectCategory=msExchPrivateMDB))';
-        $sr = @ldap_search($this->adldap->getLdapConnection(), $storageGroup, $filter, $attributes);
-        $entries = @ldap_get_entries($this->adldap->getLdapConnection(), $sr);
-        return $entries;
+        if ($sr = @ldap_search($this->adldap->getLdapConnection(), $storageGroup, $filter, $attributes)) {
+            $entries = @ldap_get_entries($this->adldap->getLdapConnection(), $sr);
+            return $entries;
+        } else {
+            return false;
+        }
     }
 }

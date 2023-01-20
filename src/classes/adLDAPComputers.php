@@ -77,10 +77,13 @@ class adLDAPComputers
         if ($fields === NULL) {
             $fields = array("memberof", "cn", "displayname", "dnshostname", "distinguishedname", "objectcategory", "operatingsystem", "operatingsystemservicepack", "operatingsystemversion");
         }
-        $sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields);
-        $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
+        if ($sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields)) {
+            $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
+            return $entries;
+        } else {
+            return false;
+        }
 
-        return $entries;
     }
 
     /**

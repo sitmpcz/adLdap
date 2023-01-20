@@ -158,21 +158,24 @@ class adLDAPContacts
         if ($fields === NULL) {
             $fields = array("distinguishedname", "mail", "memberof", "department", "displayname", "telephonenumber", "primarygroupid", "objectsid");
         }
-        $sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields);
-        $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
+        if ($sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields)) {
+            $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
 
-        if ($entries[0]['count'] >= 1) {
-            // AD does not return the primary group in the ldap query, we may need to fudge it
-            if ($this->adldap->getRealPrimaryGroup() && isset($entries[0]["primarygroupid"][0]) && isset($entries[0]["primarygroupid"][0])) {
-                //$entries[0]["memberof"][]=$this->group_cn($entries[0]["primarygroupid"][0]);
-                $entries[0]["memberof"][] = $this->adldap->group()->getPrimaryGroup($entries[0]["primarygroupid"][0], $entries[0]["objectsid"][0]);
-            } else {
-                $entries[0]["memberof"][] = "CN=Domain Users,CN=Users," . $this->adldap->getBaseDn();
+            if ($entries[0]['count'] >= 1) {
+                // AD does not return the primary group in the ldap query, we may need to fudge it
+                if ($this->adldap->getRealPrimaryGroup() && isset($entries[0]["primarygroupid"][0]) && isset($entries[0]["primarygroupid"][0])) {
+                    //$entries[0]["memberof"][]=$this->group_cn($entries[0]["primarygroupid"][0]);
+                    $entries[0]["memberof"][] = $this->adldap->group()->getPrimaryGroup($entries[0]["primarygroupid"][0], $entries[0]["objectsid"][0]);
+                } else {
+                    $entries[0]["memberof"][] = "CN=Domain Users,CN=Users," . $this->adldap->getBaseDn();
+                }
             }
-        }
 
-        $entries[0]["memberof"]["count"]++;
-        return $entries;
+            $entries[0]["memberof"]["count"]++;
+            return $entries;
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -297,23 +300,26 @@ class adLDAPContacts
         // Perform the search and grab all their details
         $filter = "(&(objectClass=contact)(cn=" . $search . "))";
         $fields = array("displayname", "distinguishedname");
-        $sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields);
-        $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
+        if ($sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields)) {
+            $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
 
-        $usersArray = array();
-        for ($i = 0; $i < $entries["count"]; $i++) {
-            if ($includeDescription && strlen($entries[$i]["displayname"][0]) > 0) {
-                $usersArray[$entries[$i]["distinguishedname"][0]] = $entries[$i]["displayname"][0];
-            } elseif ($includeDescription) {
-                $usersArray[$entries[$i]["distinguishedname"][0]] = $entries[$i]["distinguishedname"][0];
-            } else {
-                array_push($usersArray, $entries[$i]["distinguishedname"][0]);
+            $usersArray = array();
+            for ($i = 0; $i < $entries["count"]; $i++) {
+                if ($includeDescription && strlen($entries[$i]["displayname"][0]) > 0) {
+                    $usersArray[$entries[$i]["distinguishedname"][0]] = $entries[$i]["displayname"][0];
+                } elseif ($includeDescription) {
+                    $usersArray[$entries[$i]["distinguishedname"][0]] = $entries[$i]["distinguishedname"][0];
+                } else {
+                    array_push($usersArray, $entries[$i]["distinguishedname"][0]);
+                }
             }
+            if ($sorted) {
+                asort($usersArray);
+            }
+            return $usersArray;
+        } else {
+            return false;
         }
-        if ($sorted) {
-            asort($usersArray);
-        }
-        return $usersArray;
     }
 
     /**
