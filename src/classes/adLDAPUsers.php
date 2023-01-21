@@ -1,5 +1,6 @@
 <?php
 namespace adLDAP;
+
 use http\Params;
 
 /**
@@ -228,13 +229,15 @@ class adLDAPUsers
      */
     public function delete($username, $isGUID = false)
     {
-        $userinfo = $this->info($username, array("*"), $isGUID);
-        $dn = $userinfo[0]['distinguishedname'][0];
-        $result = $this->adldap->folder()->delete($dn);
-        if ($result != true) {
-            return false;
+        if ($userinfo = $this->info($username, array("*"), $isGUID)) {
+            $dn = $userinfo[0]['distinguishedname'][0];
+            $result = $this->adldap->folder()->delete($dn);
+            if ($result != true) {
+                return false;
+            }
+            return true;
         }
-        return true;
+        return false;
     }
 
     /**
@@ -416,6 +419,7 @@ class adLDAPUsers
         };
 
         $userInfo = $this->info($username, array("pwdlastset", "useraccountcontrol"), $isGUID);
+        if (!$userInfo) return false;
         $pwdLastSet = $userInfo[0]['pwdlastset'][0];
         $status = array();
 
@@ -655,11 +659,11 @@ class adLDAPUsers
     public function dn($username, $isGUID = false)
     {
         $user = $this->info($username, array("cn"), $isGUID);
-        if ($user[0]["dn"] === NULL) {
-            return false;
+        if (($user) && ($user[0]["dn"] !== NULL)) {
+            $userDn = $user[0]["dn"];
+            return $userDn;
         }
-        $userDn = $user[0]["dn"];
-        return $userDn;
+        return false;
     }
 
     /**
@@ -798,17 +802,19 @@ class adLDAPUsers
             return "Container must be an array";
         }
 
-        $userInfo = $this->info($username, array("*"));
-        $dn = $userInfo[0]['distinguishedname'][0];
-        $newRDn = "cn=" . $username;
-        $container = array_reverse($container);
-        $newContainer = "ou=" . implode(",ou=", $container);
-        $newBaseDn = strtolower($newContainer) . "," . $this->adldap->getBaseDn();
-        $result = @ldap_rename($this->adldap->getLdapConnection(), $dn, $newRDn, $newBaseDn, true);
-        if ($result !== true) {
-            return false;
+        if ($userInfo = $this->info($username, array("*"))) {
+            $dn = $userInfo[0]['distinguishedname'][0];
+            $newRDn = "cn=" . $username;
+            $container = array_reverse($container);
+            $newContainer = "ou=" . implode(",ou=", $container);
+            $newBaseDn = strtolower($newContainer) . "," . $this->adldap->getBaseDn();
+            $result = @ldap_rename($this->adldap->getLdapConnection(), $dn, $newRDn, $newBaseDn, true);
+            if ($result !== true) {
+                return false;
+            }
+            return true;
         }
-        return true;
+        return false;
     }
 
     /**
@@ -852,9 +858,11 @@ class adLDAPUsers
         if ($username === null) {
             return "Missing compulsory field [username]";
         }
-        $userInfo = $this->info($username, array("lastLogonTimestamp"));
-        $lastLogon = adLDAPUtils::convertWindowsTimeToUnixTime($userInfo[0]['lastLogonTimestamp'][0]);
-        return $lastLogon;
+        if ($userInfo = $this->info($username, array("lastLogonTimestamp"))) {
+            $lastLogon = adLDAPUtils::convertWindowsTimeToUnixTime($userInfo[0]['lastLogonTimestamp'][0]);
+            return $lastLogon;
+        }
+        return false;
     }
 
 }

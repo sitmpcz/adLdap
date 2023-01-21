@@ -132,6 +132,7 @@ class adLDAPExchange
 
         // Find the dn of the user
         $user = $this->adldap->user()->info($username, array("cn", "proxyaddresses"), $isGUID);
+        if (!$user) return false;
         if ($user[0]["dn"] === NULL) {
             return false;
         }
@@ -183,6 +184,7 @@ class adLDAPExchange
 
         // Find the dn of the user
         $user = $this->adldap->user()->info($username, array("cn", "proxyaddresses"), $isGUID);
+        if (!$user) return false;
         if ($user[0]["dn"] === NULL) {
             return false;
         }
@@ -251,6 +253,7 @@ class adLDAPExchange
 
         // Find the dn of the user
         $user = $this->adldap->user()->info($username, array("cn", "proxyaddresses"), $isGUID);
+        if (!$user) return false;
         if ($user[0]["dn"] === NULL) {
             return false;
         }
@@ -296,6 +299,7 @@ class adLDAPExchange
 
         // Find the dn of the user
         $user = $this->adldap->user()->info($username, array("cn", "proxyaddresses"), $isGUID);
+        if (!$user) return false;
         if ($user[0]["dn"] === NULL) {
             return false;
         }
@@ -347,6 +351,7 @@ class adLDAPExchange
         if ($mailNickname !== NULL) {
             // Find the dn of the user
             $user = $this->adldap->contact()->info($distinguishedName, array("cn", "displayname"));
+            if (!$user) return false;
             if ($user[0]["displayname"] === NULL) {
                 return false;
             }
