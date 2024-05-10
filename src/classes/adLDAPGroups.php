@@ -48,7 +48,7 @@ class adLDAPGroups
      *
      * @var adLDAP
      */
-    protected $adldap;
+    protected adLDAP $adldap;
 
     public function __construct(adLDAP $adldap)
     {
@@ -62,7 +62,7 @@ class adLDAPGroups
      * @param string $child The child group name
      * @return bool
      */
-    public function addGroup($parent, $child)
+    public function addGroup(string $parent,string $child): bool
     {
 
         // Find the parent group's dn
@@ -83,7 +83,7 @@ class adLDAPGroups
         $add["member"] = $childDn;
 
         $result = @ldap_mod_add($this->adldap->getLdapConnection(), $parentDn, $add);
-        if ($result == false) {
+        if (!$result) {
             return false;
         }
         return true;
@@ -97,7 +97,7 @@ class adLDAPGroups
      * @param bool $isGUID Is the username passed a GUID or a samAccountName
      * @return bool
      */
-    public function addUser($group, $user, $isGUID = false)
+    public function addUser(string $group,string $user,bool $isGUID = false): bool
     {
         // Adding a user is a bit fiddly, we need to get the full DN of the user
         // and add it using the full DN of the group
@@ -119,7 +119,7 @@ class adLDAPGroups
         $add["member"] = $userDn;
 
         $result = @ldap_mod_add($this->adldap->getLdapConnection(), $groupDn, $add);
-        if ($result == false) {
+        if (!$result) {
             return false;
         }
         return true;
@@ -132,7 +132,7 @@ class adLDAPGroups
      * @param string $contactDn The DN of the contact to add
      * @return bool
      */
-    public function addContact($group, $contactDn)
+    public function addContact(string $group,string  $contactDn): bool
     {
         // To add a contact we take the contact's DN
         // and add it using the full DN of the group
@@ -148,7 +148,7 @@ class adLDAPGroups
         $add["member"] = $contactDn;
 
         $result = @ldap_mod_add($this->adldap->getLdapConnection(), $groupDn, $add);
-        if ($result == false) {
+        if (!$result) {
             return false;
         }
         return true;
@@ -159,23 +159,24 @@ class adLDAPGroups
      *
      * @param array $attributes Default attributes of the group
      * @return bool
+     * @throws adLDAPException
      */
-    public function create($attributes)
+    public function create(array $attributes): bool
     {
         if (!is_array($attributes)) {
-            return "Attributes must be an array";
+            throw new adLDAPException( "Attributes must be an array");
         }
         if (!array_key_exists("group_name", $attributes)) {
-            return "Missing compulsory field [group_name]";
+            throw new adLDAPException( "Missing compulsory field [group_name]");
         }
         if (!array_key_exists("container", $attributes)) {
-            return "Missing compulsory field [container]";
+            throw new adLDAPException( "Missing compulsory field [container]");
         }
         if (!array_key_exists("description", $attributes)) {
-            return "Missing compulsory field [description]";
+            throw new adLDAPException( "Missing compulsory field [description]");
         }
         if (!is_array($attributes["container"])) {
-            return "Container attribute must be an array.";
+            throw new adLDAPException( "Container attribute must be an array.");
         }
         $attributes["container"] = array_reverse($attributes["container"]);
 
@@ -192,7 +193,7 @@ class adLDAPGroups
 
         $container = "OU=" . implode(",OU=", $attributes["container"]);
         $result = ldap_add($this->adldap->getLdapConnection(), "CN=" . $add["cn"] . ", " . $container . "," . $this->adldap->getBaseDn(), $add);
-        if ($result != true) {
+        if (!$result) {
             return false;
         }
         return true;
@@ -201,17 +202,18 @@ class adLDAPGroups
     /**
      * Delete a group account
      *
-     * @param string $group The group to delete (please be careful here!)
+     * @param null|string $group The group to delete (please be careful here!)
      *
-     * @return array|bool
+     * @return bool
+     * @throws adLDAPException
      */
-    public function delete($group)
+    public function delete(?string $group): bool
     {
         if (!$this->adldap->getLdapBind()) {
             return false;
         }
         if ($group === null) {
-            return "Missing compulsory field [group]";
+            throw new adLDAPException( "Missing compulsory field [group]");
         }
 
         $groupInfo = $this->info($group, array("*"));
@@ -230,7 +232,7 @@ class adLDAPGroups
      * @param string $child The child group name
      * @return bool
      */
-    public function removeGroup($parent, $child)
+    public function removeGroup(string $parent,string $child): bool
     {
 
         // Find the parent dn
@@ -251,7 +253,7 @@ class adLDAPGroups
         $del["member"] = $childDn;
 
         $result = @ldap_mod_del($this->adldap->getLdapConnection(), $parentDn, $del);
-        if ($result == false) {
+        if (!$result) {
             return false;
         }
         return true;
@@ -265,7 +267,7 @@ class adLDAPGroups
      * @param bool $isGUID Is the username passed a GUID or a samAccountName
      * @return bool
      */
-    public function removeUser($group, $user, $isGUID = false)
+    public function removeUser(string $group,string $user,bool $isGUID = false): bool
     {
 
         // Find the parent dn
@@ -285,7 +287,7 @@ class adLDAPGroups
         $del["member"] = $userDn;
 
         $result = @ldap_mod_del($this->adldap->getLdapConnection(), $groupDn, $del);
-        if ($result == false) {
+        if (!$result) {
             return false;
         }
         return true;
@@ -298,7 +300,7 @@ class adLDAPGroups
      * @param string $contactDn The DN of a contact to remove from the group
      * @return bool
      */
-    public function removeContact($group, $contactDn)
+    public function removeContact(string $group,string $contactDn): bool
     {
 
         // Find the parent dn
@@ -312,7 +314,7 @@ class adLDAPGroups
         $del["member"] = $contactDn;
 
         $result = @ldap_mod_del($this->adldap->getLdapConnection(), $groupDn, $del);
-        if ($result == false) {
+        if (!$result) {
             return false;
         }
         return true;
@@ -325,7 +327,7 @@ class adLDAPGroups
      * @param bool $recursive Recursively get groups
      * @return array|false
      */
-    public function inGroup($group, $recursive = NULL)
+    public function inGroup(string $group,?bool $recursive = NULL): array|false
     {
         if (!$this->adldap->getLdapBind()) {
             return false;
@@ -341,7 +343,7 @@ class adLDAPGroups
             return false;
         }
 
-        $groupArray = array();
+        $groupArray = [];
 
         for ($i = 0; $i < $groups["count"]; $i++) {
             $filter = "(&(objectCategory=group)(distinguishedName=" . $this->adldap->utilities()->ldapSlashes($groups[$i]) . "))";
@@ -351,7 +353,7 @@ class adLDAPGroups
                 $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
 
                 // not a person, look for a group
-                if ($entries['count'] == 0 && $recursive == true) {
+                if ($entries['count'] == 0 && $recursive) {
                     $filter = "(&(objectCategory=group)(distinguishedName=" . $this->adldap->utilities()->ldapSlashes($groups[$i]) . "))";
                     $fields = array("distinguishedname");
                     if ($sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields)) {
@@ -381,7 +383,7 @@ class adLDAPGroups
      * @param bool $recursive Recursively get group members
      * @return array|false
      */
-    public function members($group, $recursive = NULL)
+    public function members(string $group,bool $recursive = NULL): array|false
     {
         if (!$this->adldap->getLdapBind()) {
             return false;
@@ -405,7 +407,7 @@ class adLDAPGroups
                 $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
 
                 // not a person, look for a group
-                if ($entries['count'] == 0 && $recursive == true) {
+                if ($entries['count'] == 0 && $recursive) {
                     $filter = "(&(objectCategory=group)(distinguishedName=" . $this->adldap->utilities()->ldapSlashes($users[$i]) . "))";
                     $fields = array("samaccountname");
                     if ($sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields)) {
@@ -440,11 +442,11 @@ class adLDAPGroups
      * Group Information.  Returns an array of raw information about a group.
      * The group name is case sensitive
      *
-     * @param string $groupName The group name to retrieve info about
-     * @param array $fields Fields to retrieve
+     * @param null|string $groupName The group name to retrieve info about
+     * @param null|array $fields Fields to retrieve
      * @return array|false
      */
-    public function info($groupName, $fields = NULL)
+    public function info(?string $groupName,?array $fields = NULL): array|false
     {
         if ($groupName === NULL) {
             return false;
@@ -474,11 +476,11 @@ class adLDAPGroups
      * Group Information.  Returns an collection
      * The group name is case sensitive
      *
-     * @param string $groupName The group name to retrieve info about
-     * @param array $fields Fields to retrieve
+     * @param null|string $groupName The group name to retrieve info about
+     * @param null|array $fields Fields to retrieve
      * @return adLDAPGroupCollection|false
      */
-    public function infoCollection($groupName, $fields = NULL)
+    public function infoCollection(?string $groupName,?array $fields = NULL): adLDAPGroupCollection|false
     {
         if ($groupName === NULL) {
             return false;
@@ -498,10 +500,10 @@ class adLDAPGroups
     /**
      * Return a complete list of "groups in groups"
      *
-     * @param string $group The group to get the list from
+     * @param null|string $group The group to get the list from
      * @return array|false
      */
-    public function recursiveGroups($group)
+    public function recursiveGroups(?string $group): array|false
     {
         if ($group === NULL) {
             return false;
@@ -538,13 +540,13 @@ class adLDAPGroups
     /**
      * Returns a complete list of the groups in AD based on a SAM Account Type
      *
-     * @param string $sAMAaccountType The account type to return
+     * @param string|int|null $sAMAaccountType The account type to return
      * @param bool $includeDescription Whether to return a description
      * @param string $search Search parameters
      * @param bool $sorted Whether to sort the results
      * @return array|false
      */
-    public function search($sAMAaccountType = adLDAP::ADLDAP_SECURITY_GLOBAL_GROUP, $includeDescription = false, $search = "*", $sorted = true)
+    public function search(string|int|null $sAMAaccountType = adLDAP::ADLDAP_SECURITY_GLOBAL_GROUP,bool $includeDescription = false,string $search = "*",bool $sorted = true): array|false
     {
         if (!$this->adldap->getLdapBind()) {
             return false;
@@ -585,9 +587,9 @@ class adLDAPGroups
      * @param bool $includeDescription Whether to return a description
      * @param string $search Search parameters
      * @param bool $sorted Whether to sort the results
-     * @return array
+     * @return array|false
      */
-    public function all($includeDescription = false, $search = "*", $sorted = true)
+    public function all(bool $includeDescription = false,string $search = "*",bool $sorted = true): array|false
     {
         $groupsArray = $this->search(null, $includeDescription, $search, $sorted);
         return $groupsArray;
@@ -599,9 +601,9 @@ class adLDAPGroups
      * @param bool $includeDescription Whether to return a description
      * @param string $search Search parameters
      * @param bool $sorted Whether to sort the results
-     * @return array
+     * @return array|false
      */
-    public function allSecurity($includeDescription = false, $search = "*", $sorted = true)
+    public function allSecurity(bool $includeDescription = false,string $search = "*",bool $sorted = true): array|false
     {
         $groupsArray = $this->search(adLDAP::ADLDAP_SECURITY_GLOBAL_GROUP, $includeDescription, $search, $sorted);
         return $groupsArray;
@@ -613,9 +615,9 @@ class adLDAPGroups
      * @param bool $includeDescription Whether to return a description
      * @param string $search Search parameters
      * @param bool $sorted Whether to sort the results
-     * @return array
+     * @return array|false
      */
-    public function allDistribution($includeDescription = false, $search = "*", $sorted = true)
+    public function allDistribution(bool $includeDescription = false,string $search = "*",bool $sorted = true): array|false
     {
         $groupsArray = $this->search(adLDAP::ADLDAP_DISTRIBUTION_GROUP, $includeDescription, $search, $sorted);
         return $groupsArray;
@@ -628,11 +630,11 @@ class adLDAPGroups
      * This is a re-write based on code submitted by Bruce which prevents the
      * need to search each security group to find the true primary group
      *
-     * @param string $gid Group ID
-     * @param string $usersid User's Object SID
+     * @param null|string $gid Group ID
+     * @param null|string $usersid User's Object SID
      * @return mixed
      */
-    public function getPrimaryGroup($gid, $usersid)
+    public function getPrimaryGroup(?string $gid,?string $usersid): mixed
     {
         if ($gid === NULL || $usersid === NULL) {
             return false;
@@ -660,11 +662,11 @@ class adLDAPGroups
      * If someone can show otherwise, I'd like to know about it :)
      * this way is resource intensive and generally a pain in the @#%^
      *
-     * @param string $gid Group ID
-     * @return string
+     * @param null|string $gid Group ID
+     * @return string|false
      * @deprecated deprecated since version 3.1, see get get_primary_group
      */
-    public function cn($gid)
+    public function cn(?string $gid): string|false
     {
         if ($gid === NULL) {
             return false;

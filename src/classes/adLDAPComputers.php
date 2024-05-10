@@ -50,7 +50,7 @@ class adLDAPComputers
      *
      * @var adLDAP
      */
-    protected $adldap;
+    protected adLDAP $adldap;
 
     public function __construct(adLDAP $adldap)
     {
@@ -60,11 +60,11 @@ class adLDAPComputers
     /**
      * Get information about a specific computer. Returned in a raw array format from AD
      *
-     * @param string $computerName The name of the computer
-     * @param array $fields Attributes to return
-     * @return false
+     * @param string|null $computerName The name of the computer
+     * @param array|null $fields Attributes to return
+     * @return array|false
      */
-    public function info($computerName, $fields = NULL)
+    public function info(?string $computerName,?array $fields = NULL): array|false
     {
         if ($computerName === NULL) {
             return false;
@@ -89,11 +89,11 @@ class adLDAPComputers
     /**
      * Find information about the computers. Returned in a raw array format from AD
      *
-     * @param string $computerName The name of the computer
-     * @param array $fields Array of parameters to query
-     * @return mixed
+     * @param string|null $computerName The name of the computer
+     * @param array|null $fields Array of parameters to query
+     * @return adLDAPComputerCollection|false
      */
-    public function infoCollection($computerName, $fields = NULL)
+    public function infoCollection(?string $computerName,?array $fields = NULL): adLDAPComputerCollection|false
     {
         if ($computerName === NULL) {
             return false;
@@ -114,12 +114,12 @@ class adLDAPComputers
     /**
      * Check if a computer is in a group
      *
-     * @param string $computerName The name of the computer
-     * @param string $group The group to check
+     * @param string|null $computerName The name of the computer
+     * @param string|null $group The group to check
      * @param bool $recursive Whether to check recursively
-     * @return array|false
+     * @return bool
      */
-    public function inGroup($computerName, $group, $recursive = NULL)
+    public function inGroup(?string $computerName,?string $group,?bool $recursive = NULL): bool
     {
         if ($computerName === NULL) {
             return false;
@@ -148,11 +148,11 @@ class adLDAPComputers
     /**
      * Get the groups a computer is in
      *
-     * @param string $computerName The name of the computer
+     * @param string|null $computerName The name of the computer
      * @param bool $recursive Whether to check recursively
      * @return array|false
      */
-    public function groups($computerName, $recursive = NULL)
+    public function groups(?string $computerName,?bool $recursive = NULL): array|false
     {
         if ($computerName === NULL) {
             return false;

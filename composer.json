@@ -4,7 +4,8 @@
   "require": {
     "php": ">=8.0",
     "ext-ldap": "*",
-    "ext-bcmath": "*"
+    "ext-bcmath": "*",
+    "ext-mbstring": "*"
   },
   "minimum-stability": "dev",
   "autoload": {

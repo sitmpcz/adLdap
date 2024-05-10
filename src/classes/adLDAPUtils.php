@@ -43,14 +43,14 @@ require_once(dirname(__FILE__) . '/../adLDAP.php');
  */
 class adLDAPUtils
 {
-    const ADLDAP_VERSION = '4.0.4';
+    const ADLDAP_VERSION = '4.1.0';
 
     /**
      * The current adLDAP connection via dependency injection
      *
      * @var adLDAP
      */
-    protected $adldap;
+    protected adLDAP $adldap;
 
     public function __construct(adLDAP $adldap)
     {
@@ -64,10 +64,10 @@ class adLDAPUtils
      * @param array $groups
      * @return array
      */
-    public function niceNames($groups)
+    public function niceNames(array $groups): array
     {
 
-        $groupArray = array();
+        $groupArray = [];
         //PHP Warning: Trying to access array offset on value of type null
         if (isset($groups["count"])) {
             for ($i = 0; $i < $groups["count"]; $i++) { // For each group
@@ -91,7 +91,7 @@ class adLDAPUtils
      * @param string $str
      * @return string
      */
-    public function escapeCharacters($str)
+    public function escapeCharacters(string $str): string
     {
         $str = str_replace(",", "\,", $str);
         return $str;
@@ -107,7 +107,7 @@ class adLDAPUtils
      * @return string
      * @author Port by Andreas Gohr <andi@splitbrain.org>
      */
-    public function ldapSlashes($str)
+    public function ldapSlashes(string $str): string
     {
         // PHP7 -  preg_replace(): The /e modifier is no longer supported, use preg_replace_callback instead
         //return preg_replace('/([\x00-\x1F\*\(\)\\\\])/e','"\\\\\".join("",unpack("H2","$1"))',$str);
@@ -120,7 +120,7 @@ class adLDAPUtils
      * @param string $strGUID A string representation of a GUID
      * @return string
      */
-    public function strGuidToHex($strGUID)
+    public function strGuidToHex(string $strGUID): string
     {
         $strGUID = str_replace('-', '', $strGUID);
 
@@ -148,7 +148,7 @@ class adLDAPUtils
      * @param string $binsid A Binary SID
      * @return string
      */
-    public function getTextSID($binsid)
+    public function getTextSID(string $binsid): string
     {
         $hex_sid = bin2hex($binsid);
         $rev = hexdec(substr($hex_sid, 0, 2));
@@ -172,7 +172,7 @@ class adLDAPUtils
      * @param string $hex A hex code
      * @return string
      */
-    public function littleEndian($hex)
+    public function littleEndian(string $hex): string
     {
         $result = '';
         for ($x = strlen($hex) - 2; $x >= 0; $x = $x - 2) {
@@ -187,7 +187,7 @@ class adLDAPUtils
      * @param string $bin A binary LDAP attribute
      * @return string
      */
-    public function binaryToText($bin)
+    public function binaryToText(string $bin): string
     {
         $hex_guid = bin2hex($bin);
         $hex_guid_to_guid_str = '';
@@ -210,10 +210,10 @@ class adLDAPUtils
     /**
      * Converts a binary GUID to a string GUID
      *
-     * @param string $binaryGuid The binary GUID attribute to convert
+     * @param null|string $binaryGuid The binary GUID attribute to convert
      * @return string
      */
-    public function decodeGuid($binaryGuid)
+    public function decodeGuid(?string $binaryGuid): string
     {
         if ($binaryGuid === null) {
             return "Missing compulsory field [binaryGuid]";
@@ -230,7 +230,7 @@ class adLDAPUtils
      * @param bool $bool Boolean value
      * @return string
      */
-    public function boolToStr($bool)
+    public function boolToStr(bool $bool): string
     {
         return ($bool) ? 'TRUE' : 'FALSE';
     }
@@ -238,7 +238,7 @@ class adLDAPUtils
     /**
      * Convert 8bit characters e.g. accented characters to UTF8 encoded characters
      */
-    public function encode8Bit(&$item, $key)
+    public function encode8Bit(mixed &$item,string|int $key): void
     {
         $encode = false;
         if (is_string($item)) {
@@ -249,7 +249,9 @@ class adLDAPUtils
             }
         }
         if ($encode === true && $key != 'password') {
-            $item = utf8_encode($item);
+            // utf8_encode has been DEPRECATED as of PHP 8.2.0.
+            //$item = utf8_encode($item);
+            $item = mb_convert_encoding($item, 'UTF-8', 'ISO-8859-1');
         }
     }
 
@@ -258,7 +260,7 @@ class adLDAPUtils
      *
      * @return string
      */
-    public function getVersion()
+    public function getVersion(): string
     {
         return self::ADLDAP_VERSION;
     }
@@ -270,7 +272,7 @@ class adLDAPUtils
      * @param int $windowsTime
      * @return int $unixTime
      */
-    public static function convertWindowsTimeToUnixTime($windowsTime)
+    public static function convertWindowsTimeToUnixTime(int $windowsTime): int
     {
         $unixTime = round($windowsTime / 10000000) - 11644477200;
         return $unixTime;

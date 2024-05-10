@@ -39,7 +39,7 @@ namespace adLDAP;
 class adLDAPGroupCollection extends adLDAPCollection
 {
 
-    public function __set($attribute, $value)
+    public function __set(string $attribute,mixed $value)
     {
 
     }

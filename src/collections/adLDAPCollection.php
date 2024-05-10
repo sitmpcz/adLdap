@@ -43,23 +43,23 @@ abstract class adLDAPCollection
      *
      * @var adLDAP
      */
-    protected $adldap;
+    protected adLDAP $adldap;
 
     /**
      * The current object being modifed / called
      *
      * @var mixed
      */
-    protected $currentObject;
+    protected mixed $currentObject;
 
     /**
      * The raw info array from Active Directory
      *
      * @var array
      */
-    protected $info;
+    protected array $info;
 
-    public function __construct($info, adLDAP $adldap)
+    public function __construct(array $info, adLDAP $adldap)
     {
         $this->setInfo($info);
         $this->adldap = $adldap;
@@ -70,7 +70,7 @@ abstract class adLDAPCollection
      *
      * @param array $info
      */
-    public function setInfo(array $info)
+    public function setInfo(array $info): void
     {
         if ($this->info && sizeof($info) >= 1) {
             unset($this->info);
@@ -84,7 +84,7 @@ abstract class adLDAPCollection
      * @param string $attribute
      * @return mixed
      */
-    public function __get($attribute)
+    public function __get(string $attribute): mixed
     {
         if (isset($this->info[0]) && is_array($this->info[0])) {
             foreach ($this->info[0] as $keyAttr => $valueAttr) {
@@ -111,9 +111,8 @@ abstract class adLDAPCollection
      *
      * @param string $attribute
      * @param string $value
-     * @return bool
      */
-    abstract public function __set($attribute, $value);
+    abstract public function __set(string $attribute,mixed $value);
 
     /**
      * Magic isset method to check for the existence of an attribute
@@ -121,7 +120,7 @@ abstract class adLDAPCollection
      * @param string $attribute
      * @return bool
      */
-    public function __isset($attribute)
+    public function __isset(string $attribute): bool
     {
         if (isset($this->info[0]) && is_array($this->info[0])) {
             foreach ($this->info[0] as $keyAttr => $valueAttr) {
@@ -133,5 +132,3 @@ abstract class adLDAPCollection
         return false;
     }
 }
-
-?>
