@@ -682,7 +682,7 @@ class adLDAP
         } else {
             // $this->ldapConnection = ldap_connect($domainController, $this->adPort);
             // PHP 8.3
-            $this->ldapConnection = ldap_connect($domainController . ":" . $this->adPort);
+            $this->ldapConnection = ldap_connect("ldap://" . $domainController . ":" . $this->adPort);
         }
 
         // Set some ldap options for talking to AD
