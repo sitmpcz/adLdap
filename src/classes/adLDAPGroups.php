@@ -383,7 +383,7 @@ class adLDAPGroups
      * @param bool $recursive Recursively get group members
      * @return array|false
      */
-    public function members(string $group,bool $recursive = NULL): array|false
+    public function members(string $group,bool $recursive = false): array|false
     {
         if (!$this->adldap->getLdapBind()) {
             return false;
