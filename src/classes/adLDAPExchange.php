@@ -413,7 +413,7 @@ class adLDAPExchange
      * @return array|false
      * @throws adLDAPException
      */
-    public function storageGroups(?string $exchangeServer,array $attributes = ['cn', 'distinguishedname'],bool $recursive = NULL): array|false
+    public function storageGroups(?string $exchangeServer,array $attributes = ['cn', 'distinguishedname'],bool $recursive = false): array|false
     {
         if (!$this->adldap->getLdapBind()) {
             return false;
